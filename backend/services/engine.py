@@ -15,6 +15,16 @@ DATA_FILE = Path(__file__).resolve().parents[1] / "data" / "graph_memory.json"
 NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 
 
+def resolve_data_file() -> Path:
+    custom = os.getenv("GRAPH_DATA_FILE", "").strip()
+    if custom:
+        return Path(custom)
+    # Vercel filesystem is read-only except /tmp.
+    if os.getenv("VERCEL", "") == "1":
+        return Path("/tmp/graph_memory.json")
+    return DATA_FILE
+
+
 @dataclass
 class Goal:
     id: str
@@ -49,7 +59,7 @@ class GraphPilotEngine:
     """Final submission engine: deterministic, inspectable, graph-native agent pipeline."""
 
     def __init__(self, data_file: Path | None = None) -> None:
-        self.data_file = data_file or DATA_FILE
+        self.data_file = data_file or resolve_data_file()
         self._state = self._load_state()
 
     def _load_state(self) -> dict[str, Any]:
