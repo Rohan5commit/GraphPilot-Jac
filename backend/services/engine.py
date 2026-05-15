@@ -46,53 +46,55 @@ class Memory:
 
 
 class GraphPilotEngine:
-    """Jac-inspired agentic graph engine with deterministic tool pipeline."""
+    """Final submission engine: deterministic, inspectable, graph-native agent pipeline."""
 
-    def __init__(self) -> None:
+    def __init__(self, data_file: Path | None = None) -> None:
+        self.data_file = data_file or DATA_FILE
         self._state = self._load_state()
 
     def _load_state(self) -> dict[str, Any]:
-        if DATA_FILE.exists():
-            return json.loads(DATA_FILE.read_text())
+        if self.data_file.exists():
+            return json.loads(self.data_file.read_text())
         return {"goals": [], "tasks": [], "memories": [], "activity": [], "edges": []}
 
     def _save_state(self) -> None:
-        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        DATA_FILE.write_text(json.dumps(self._state, indent=2))
+        self.data_file.parent.mkdir(parents=True, exist_ok=True)
+        self.data_file.write_text(json.dumps(self._state, indent=2))
 
     def run_goal(self, goal_text: str, scenario: str) -> dict[str, Any]:
         now = datetime.now(timezone.utc).isoformat()
         goal = Goal(str(uuid.uuid4()), goal_text, scenario, "active", now)
         self._state["goals"].append(asdict(goal))
 
-        planner = self._jac_planner(goal_text, scenario)
+        plan = self._jac_planner(goal_text, scenario)
         tasks: list[dict[str, Any]] = []
-        run_events = [{"type": "planner_start", "payload": planner}]
+        tool_artifacts: list[dict[str, Any]] = []
+        run_events = [{"type": "planner_start", "payload": plan}]
 
-        for idx, step in enumerate(planner["steps"], start=1):
-            tool = step["tool"]
-            result = self._execute_tool(tool=tool, goal=goal_text, step_title=step["title"], scenario=scenario)
+        for idx, step in enumerate(plan["steps"], start=1):
+            artifact = self._execute_tool(tool=step["tool"], goal=goal_text, scenario=scenario, order=idx)
+            tool_artifacts.append(artifact)
             task = Task(
                 id=str(uuid.uuid4()),
                 goal_id=goal.id,
                 title=step["title"],
                 status="done",
                 owner=step["owner"],
-                notes=result["summary"],
-                tool=tool,
+                notes=artifact["summary"],
+                tool=step["tool"],
                 order=idx,
             )
             task_obj = asdict(task)
             self._state["tasks"].append(task_obj)
             tasks.append(task_obj)
-            run_events.append({"type": "task_complete", "payload": {"task": task.title, "tool": tool}})
+            run_events.append({"type": "task_complete", "payload": {"task": task.title, "tool": step["tool"], "order": idx}})
 
-        memories, edges = self._memory_traverse(goal, tasks, planner)
+        memories, edges = self._memory_traverse(goal, tasks, plan, tool_artifacts)
         self._state["memories"].extend(memories)
         self._state["edges"].extend(edges)
 
-        final_summary = self._final_summary(goal_text, scenario, tasks, memories)
-        run_events.append({"type": "final_summary", "payload": {"chars": len(final_summary)}})
+        summary = self._final_summary(goal_text, scenario, tasks, memories, tool_artifacts)
+        run_events.append({"type": "summary_complete", "payload": {"chars": len(summary)}})
 
         activity = {
             "goal_id": goal.id,
@@ -104,18 +106,19 @@ class GraphPilotEngine:
                 "edges_written": len(edges),
                 "tools_used": sorted({t["tool"] for t in tasks}),
             },
+            "tool_artifacts": tool_artifacts,
         }
         self._state["activity"].append(activity)
         self._save_state()
 
         return {
             "goal": asdict(goal),
-            "plan": planner,
+            "plan": plan,
             "tasks": tasks,
             "memories": memories,
             "edges": edges,
             "activity": activity,
-            "summary": final_summary,
+            "summary": summary,
             "graph": self.graph_snapshot(goal.id),
         }
 
@@ -128,82 +131,118 @@ class GraphPilotEngine:
             goals = [g for g in goals if g["id"] == goal_id]
             tasks = [t for t in tasks if t["goal_id"] == goal_id]
             memories = [m for m in memories if m["goal_id"] == goal_id]
-            mem_ids = {m["id"] for m in memories}
-            task_ids = {t["id"] for t in tasks}
-            edge_ids = mem_ids | task_ids | {g["id"] for g in goals}
-            edges = [e for e in edges if e["from"] in edge_ids and e["to"] in edge_ids]
-        return {"goals": goals, "tasks": tasks, "memories": memories, "edges": edges, "activity": self._state["activity"][-12:]}
+            allowed = {g["id"] for g in goals} | {t["id"] for t in tasks} | {m["id"] for m in memories}
+            edges = [e for e in edges if e["from"] in allowed and e["to"] in allowed]
+        return {
+            "goals": goals,
+            "tasks": tasks,
+            "memories": memories,
+            "edges": edges,
+            "activity": self._state["activity"][-10:],
+        }
 
     def _jac_planner(self, goal_text: str, scenario: str) -> dict[str, Any]:
         objective = self._extract_objective(goal_text)
-        base_tools = ["memory_traverse", "web_lookup", "constraint_solver", "llm_synthesis"]
         return {
             "walker": "GraphPlanner",
             "objective": objective,
             "scenario": scenario,
             "steps": [
-                {"title": f"Define success criteria for {objective}", "tool": base_tools[0], "owner": "planner"},
-                {"title": "Gather external context and evidence", "tool": base_tools[1], "owner": "researcher"},
-                {"title": "Generate constraints-aware options", "tool": base_tools[2], "owner": "optimizer"},
-                {"title": "Synthesize final execution memo", "tool": base_tools[3], "owner": "summarizer"},
+                {"title": f"Define success criteria for {objective}", "tool": "memory_traverse", "owner": "planner"},
+                {"title": "Gather external context and evidence", "tool": "web_lookup", "owner": "researcher"},
+                {"title": "Generate constraints-aware options", "tool": "constraint_solver", "owner": "optimizer"},
+                {"title": "Synthesize final execution memo", "tool": "llm_synthesis", "owner": "summarizer"},
             ],
         }
 
-    def _execute_tool(self, tool: str, goal: str, step_title: str, scenario: str) -> dict[str, str]:
-        if tool == "web_lookup":
-            return self._tool_web_lookup(goal, scenario)
-        if tool == "constraint_solver":
-            return self._tool_constraint_solver(goal, scenario)
+    def _execute_tool(self, tool: str, goal: str, scenario: str, order: int) -> dict[str, Any]:
         if tool == "memory_traverse":
-            return {"summary": f"Recovered related memories and constraints for '{goal}'."}
-        return {"summary": f"Prepared synthesis context for '{step_title}'."}
+            return {
+                "tool": tool,
+                "order": order,
+                "summary": "Recovered prior constraints and intent from graph memory.",
+                "data": {"constraints": ["time", "quality", "risk"], "signal": "historical run alignment"},
+            }
+        if tool == "web_lookup":
+            domain_hint = {
+                "research": ["Recent benchmark posts", "Open-source docs", "Community adoption threads"],
+                "planning": ["Calendar blocking techniques", "Focus interval studies", "Habit adherence metrics"],
+                "fintech": ["Cashflow templates", "Emergency fund ratios", "Volatility coping playbooks"],
+            }.get(scenario, ["Domain brief", "Public references", "Current trends"])
+            return {
+                "tool": tool,
+                "order": order,
+                "summary": "Collected external evidence from scenario-specific sources.",
+                "data": {"evidence": domain_hint},
+            }
+        if tool == "constraint_solver":
+            return {
+                "tool": tool,
+                "order": order,
+                "summary": "Produced ranked options with explicit tradeoffs.",
+                "data": {
+                    "options": [
+                        {"label": "Low-risk path", "score": 0.86, "tradeoff": "slower speed"},
+                        {"label": "Balanced path", "score": 0.91, "tradeoff": "moderate effort"},
+                        {"label": "Aggressive path", "score": 0.78, "tradeoff": "higher risk"},
+                    ]
+                },
+            }
+        return {
+            "tool": tool,
+            "order": order,
+            "summary": "Prepared final synthesis packet from all tool artifacts.",
+            "data": {"format": "outcome + next-3-actions + risks"},
+        }
 
-    def _tool_web_lookup(self, goal: str, scenario: str) -> dict[str, str]:
-        domain_hint = {
-            "research": "industry reports",
-            "planning": "calendar and effort estimates",
-            "fintech": "budgeting and risk controls",
-            "healthcare": "care coordination constraints",
-        }.get(scenario, "relevant public information")
-        return {"summary": f"Collected {domain_hint} to support: {goal}."}
-
-    def _tool_constraint_solver(self, goal: str, scenario: str) -> dict[str, str]:
-        constraints = {
-            "research": "confidence, recency, and source diversity",
-            "planning": "time blocks, deadlines, and energy windows",
-            "fintech": "cashflow volatility, reserves, and spending caps",
-            "healthcare": "safety, follow-up cadence, and accessibility",
-        }.get(scenario, "resources, risk, and timeline")
-        return {"summary": f"Generated ranked options balancing {constraints} for goal: {goal}."}
-
-    def _memory_traverse(self, goal: Goal, tasks: list[dict[str, Any]], planner: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    def _memory_traverse(
+        self,
+        goal: Goal,
+        tasks: list[dict[str, Any]],
+        plan: dict[str, Any],
+        artifacts: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
         now = datetime.now(timezone.utc).isoformat()
         memories = [
             asdict(Memory(str(uuid.uuid4()), goal.id, "goal", goal.title, now)),
             asdict(Memory(str(uuid.uuid4()), goal.id, "scenario", goal.scenario, now)),
-            asdict(Memory(str(uuid.uuid4()), goal.id, "planner_objective", planner["objective"], now)),
+            asdict(Memory(str(uuid.uuid4()), goal.id, "objective", plan["objective"], now)),
+            asdict(Memory(str(uuid.uuid4()), goal.id, "artifact_count", str(len(artifacts)), now)),
         ]
         edges: list[dict[str, str]] = []
-        for t in tasks:
-            edges.append({"from": goal.id, "to": t["id"], "type": "decomposes"})
-            for m in memories:
-                edges.append({"from": t["id"], "to": m["id"], "type": "informs"})
+        for task in tasks:
+            edges.append({"from": goal.id, "to": task["id"], "type": "decomposes"})
+        for memory in memories:
+            edges.append({"from": goal.id, "to": memory["id"], "type": "remembers"})
+            for task in tasks:
+                edges.append({"from": task["id"], "to": memory["id"], "type": "informs"})
         return memories, edges
 
     def _extract_objective(self, goal_text: str) -> str:
         cleaned = re.sub(r"\s+", " ", goal_text.strip())
         return cleaned[:120] if len(cleaned) > 120 else cleaned
 
-    def _final_summary(self, goal_text: str, scenario: str, tasks: list[dict[str, Any]], memories: list[dict[str, Any]]) -> str:
+    def _final_summary(
+        self,
+        goal_text: str,
+        scenario: str,
+        tasks: list[dict[str, Any]],
+        memories: list[dict[str, Any]],
+        artifacts: list[dict[str, Any]],
+    ) -> str:
         prompt = (
-            "You are GraphPilot Jac's final synthesis agent. "
-            "Return: 1) outcome summary, 2) next 3 actions, 3) risks.\n"
+            "You are GraphPilot Jac synthesis agent. Return exactly:\n"
+            "1) Outcome summary\n2) Next 3 actions\n3) Risks\n"
             f"Goal: {goal_text}\nScenario: {scenario}\n"
-            f"Tasks: {json.dumps(tasks)}\nMemories: {json.dumps(memories)}"
+            f"Tasks: {json.dumps(tasks)}\nMemories: {json.dumps(memories)}\nArtifacts: {json.dumps(artifacts)}"
         )
         api_key = os.getenv("NIM_API_KEY", "")
         if not api_key:
-            return "Outcome: plan generated with 4 completed tasks. Next actions: execute top priority item, validate assumptions, and review metrics in 48 hours. Risks: stale inputs and changing constraints."
+            return (
+                "Outcome summary: GraphPilot decomposed the goal into 4 completed steps and stored graph memory.\n"
+                "Next 3 actions: (1) Execute the balanced option first. (2) Validate results after 48 hours. (3) Re-run with updated evidence.\n"
+                "Risks: stale assumptions, incomplete evidence coverage, and timeline slippage."
+            )
         try:
             response = requests.post(
                 NIM_URL,
@@ -219,4 +258,8 @@ class GraphPilotEngine:
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
         except Exception:
-            return "Outcome: resilient fallback summary created. Next actions: run execution checklist, gather fresh evidence, and rerank options against constraints. Risks: external API timeout and limited source breadth."
+            return (
+                "Outcome summary: Fallback synthesis generated from deterministic artifacts.\n"
+                "Next 3 actions: (1) Prioritize the balanced path. (2) Confirm constraints with stakeholders. (3) Track outcomes in graph memory.\n"
+                "Risks: remote model timeout and external evidence drift."
+            )

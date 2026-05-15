@@ -1,7 +1,7 @@
-# Jac/Jaseci Feature Notes
+# Jac / Jaseci Feature Notes
 
-- **Graph-native modeling:** Goal/Task/Memory nodes with typed fields.
-- **Walker-based orchestration:** Planner, memory traversal, executor walkers.
-- **Graph relation semantics:** explicit edges for decomposition and memory links.
-- **LLM augmentation:** synthesis stage tied to agent pipeline.
-- **Stateful memory:** persistent graph snapshot powering multi-step agent behavior.
+- Graph-native schema with `Goal`, `Task`, `Memory` nodes.
+- Semantic relationship edges: `decomposes`, `remembers`, `informs`.
+- Walker semantics for planning (`GraphPlanner`), execution (`Executor`), and memory updates (`MemoryTraverse`).
+- Agent phases map directly to Jac concepts and are reflected in runtime activity events.
+- Persistent memory graph enables stateful multi-run coordination and traversal-style reporting.

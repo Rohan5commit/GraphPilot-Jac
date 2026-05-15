@@ -1,6 +1,6 @@
-# GraphPilot Jac
+# GraphPilot Jac (Final Submission)
 
-GraphPilot Jac is a Jac-first agentic workspace for turning real-world goals into executable graph plans with visible agent activity.
+GraphPilot Jac is a Jac-first agentic workspace that converts a user goal into a graph-modeled execution plan, runs tool-backed steps, persists graph memory, and returns a final action summary.
 
 ## Exact Repo Tree
 
@@ -26,6 +26,7 @@ GraphPilot-Jac/
 │   ├── submission-checklist.md
 │   └── submission-description.md
 ├── scenarios/demo_scenarios.json
+├── tests/test_engine.py
 ├── .env.example
 ├── .gitignore
 └── requirements.txt
@@ -41,22 +42,21 @@ export $(cat .env | xargs)
 uvicorn backend.main:app --reload --port 8000
 ```
 
-Visit: `http://localhost:8000`
+Visit: http://localhost:8000
 
-## Core Product Flow
-1. User enters a goal and scenario.
-2. Graph planner creates Jac-style step sequence.
-3. Tool-enabled executor runs 3 practical actions:
-   - `memory_traverse`
-   - `web_lookup`
-   - `constraint_solver`
-4. Memory walker writes goal/task/context nodes and edges.
-5. Final synthesis agent returns action summary with next actions and risks.
-6. UI renders activity timeline + graph state + final report.
+## Core Agent Flow
+1. Goal intake (`POST /api/run`).
+2. Jac-style planning decomposition (`GraphPlanner`).
+3. Tool execution (`memory_traverse`, `web_lookup`, `constraint_solver`, `llm_synthesis`).
+4. Graph memory updates (nodes + edges with relationship semantics).
+5. Final synthesis and action summary.
+6. UI projections for activity timeline, tool artifacts, graph state, and metrics.
 
-## Demo Scenarios
-See `scenarios/demo_scenarios.json` for seeded stable runs.
+## Tests
+```bash
+pytest -q
+```
 
-## Environment Variables
-- `NIM_API_KEY`: NVIDIA NIM API key for live LLM synthesis.
-- `VERCEL_TOKEN`: optional deployment token.
+## Env vars
+- `NIM_API_KEY` (optional): enables live NIM synthesis.
+- `VERCEL_TOKEN` (optional): deployment token.

@@ -8,10 +8,13 @@
 </head>
 <body>
   <main class='wrap'>
-    <header><h1>GraphPilot Jac</h1><p>Jac-first agentic research and action workspace.</p></header>
+    <header>
+      <h1>GraphPilot Jac</h1>
+      <p>Final Submission: Jac-first agentic research and action workspace.</p>
+    </header>
     <section class='card'>
       <label>Goal</label>
-      <textarea id='goal' placeholder='Example: Create a two-week launch plan for a student mental health non-profit.'></textarea>
+      <textarea id='goal' placeholder='Example: Build a 2-week launch plan for a social impact student project.'></textarea>
       <label>Scenario</label>
       <select id='scenario'>
         <option value='research'>Research Assistant</option>
@@ -21,10 +24,17 @@
       <button id='run'>Run GraphPilot Agents</button>
       <p id='status' class='status'>Idle.</p>
     </section>
+
     <section class='grid'>
       <article class='card'><h3>Agent Activity</h3><pre id='activity'>No runs yet.</pre></article>
-      <article class='card'><h3>Graph State (nodes + edges)</h3><pre id='graph'>No graph yet.</pre></article>
+      <article class='card'><h3>Graph State</h3><pre id='graph'>No graph yet.</pre></article>
     </section>
+
+    <section class='grid'>
+      <article class='card'><h3>Tool Artifacts</h3><pre id='artifacts'>Artifacts will appear here.</pre></article>
+      <article class='card'><h3>Graph Metrics</h3><pre id='metrics'>Metrics will appear here.</pre></article>
+    </section>
+
     <section class='card'><h3>Final Result</h3><pre id='summary'>Run a goal to generate final summary.</pre></section>
   </main>
   <script src='/app/main.js'></script>
