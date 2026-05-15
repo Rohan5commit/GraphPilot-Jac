@@ -153,17 +153,62 @@ class GraphPilotEngine:
 
     def _jac_planner(self, goal_text: str, scenario: str) -> dict[str, Any]:
         objective = self._extract_objective(goal_text)
-        return {
-            "walker": "GraphPlanner",
-            "objective": objective,
-            "scenario": scenario,
-            "steps": [
-                {"title": f"Define success criteria for {objective}", "tool": "memory_traverse", "owner": "planner"},
-                {"title": "Gather external context and evidence", "tool": "web_lookup", "owner": "researcher"},
-                {"title": "Generate constraints-aware options", "tool": "constraint_solver", "owner": "optimizer"},
-                {"title": "Synthesize final execution memo", "tool": "llm_synthesis", "owner": "summarizer"},
-            ],
-        }
+        
+        prompt = (
+            "You are GraphPilot Jac Planner. Decompose the following goal into 3-5 logical execution steps. "
+            "Each step must have a 'title', a 'tool' from [memory_traverse, web_lookup, constraint_solver, llm_synthesis], "
+            "and an 'owner' from [planner, researcher, optimizer, summarizer]. "
+            "Return ONLY a JSON object with a 'steps' array. "
+            f"Goal: {goal_text}\\nScenario: {scenario}\\nObjective: {objective}"
+        )
+        
+        api_key = os.getenv("NIM_API_KEY", "")
+        if not api_key:
+            # Deterministic fallback for local dev without key
+            return {
+                "walker": "GraphPlanner",
+                "objective": objective,
+                "scenario": scenario,
+                "steps": [
+                    {"title": f"Define success criteria for {objective}", "tool": "memory_traverse", "owner": "planner"},
+                    {"title": "Gather external context and evidence", "tool": "web_lookup", "owner": "researcher"},
+                    {"title": "Generate constraints-aware options", "tool": "constraint_solver", "owner": "optimizer"},
+                    {"title": "Synthesize final execution memo", "tool": "llm_synthesis", "owner": "summarizer"},
+                ],
+            }
+            
+        try:
+            response = requests.post(
+                NIM_URL,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "meta/llama-3.1-70b-instruct",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.1,
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=25,
+            )
+            response.raise_for_status()
+            res_json = response.json()["choices"][0]["message"]["content"]
+            plan_data = json.loads(res_json)
+            return {
+                "walker": "GraphPlanner",
+                "objective": objective,
+                "scenario": scenario,
+                "steps": plan_data.get("steps", []),
+            }
+        except Exception:
+            return {
+                "walker": "GraphPlanner",
+                "objective": objective,
+                "scenario": scenario,
+                "steps": [
+                    {"title": "Fallback: Initial Research", "tool": "web_lookup", "owner": "researcher"},
+                    {"title": "Fallback: Constraint Analysis", "tool": "constraint_solver", "owner": "optimizer"},
+                    {"title": "Fallback: Final Synthesis", "tool": "llm_synthesis", "owner": "summarizer"},
+                ],
+            }
 
     def _execute_tool(self, tool: str, goal: str, scenario: str, order: int) -> dict[str, Any]:
         if tool == "memory_traverse":

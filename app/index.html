@@ -27,13 +27,15 @@
 
     <section class='grid'>
       <article class='card'><h3>Agent Activity</h3><pre id='activity'>No runs yet.</pre></article>
-      <article class='card'><h3>Graph State</h3><pre id='graph'>No graph yet.</pre></article>
+      <article class='card'><h3>Graph Visualization</h3><div id='graph-viz' style='height: 400px; background: #07101f; border-radius: 8px;'></div></article>
     </section>
 
     <section class='grid'>
       <article class='card'><h3>Tool Artifacts</h3><pre id='artifacts'>Artifacts will appear here.</pre></article>
       <article class='card'><h3>Graph Metrics</h3><pre id='metrics'>Metrics will appear here.</pre></article>
     </section>
+    <script src='https://unpkg.com/vis-network/standalone/umd/vis-network.min.js'></script>
+    <script src='/app/main.js'></script>
 
     <section class='card'><h3>Final Result</h3><pre id='summary'>Run a goal to generate final summary.</pre></section>
   </main>
