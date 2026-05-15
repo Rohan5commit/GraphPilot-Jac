@@ -1,0 +1,5 @@
+[
+  {"name":"Research Assistant","scenario":"research","goal":"Research top 3 open-source graph databases for startup analytics."},
+  {"name":"Personal Planning","scenario":"planning","goal":"Plan a 2-week interview prep schedule with daily milestones."},
+  {"name":"Fintech Workflow","scenario":"fintech","goal":"Create a monthly cashflow stabilization plan for a freelancer with variable income."}
+]
