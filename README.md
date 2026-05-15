@@ -1,8 +1,8 @@
 # GraphPilot Jac
 
-GraphPilot Jac is an agentic research-and-action workspace built Jac-first: goals become graph nodes, walkers orchestrate planning/execution, and LLM synthesis generates final action summaries.
+GraphPilot Jac is a Jac-first agentic workspace for turning real-world goals into executable graph plans with visible agent activity.
 
-## Repo Tree
+## Exact Repo Tree
 
 ```text
 GraphPilot-Jac/
@@ -11,10 +11,13 @@ GraphPilot-Jac/
 │   ├── main.js
 │   └── styles.css
 ├── backend/
-│   ├── data/graph_memory.json (created at runtime)
+│   ├── __init__.py
+│   ├── data/graph_memory.json (runtime)
 │   ├── jac/graphpilot.jac
-│   ├── services/engine.py
-│   └── main.py
+│   ├── main.py
+│   └── services/
+│       ├── __init__.py
+│       └── engine.py
 ├── docs/
 │   ├── architecture.md
 │   ├── demo-script.md
@@ -24,23 +27,36 @@ GraphPilot-Jac/
 │   └── submission-description.md
 ├── scenarios/demo_scenarios.json
 ├── .env.example
+├── .gitignore
 └── requirements.txt
 ```
 
-## Quick Start
+## Setup
 
-1. `python -m venv .venv && source .venv/bin/activate`
-2. `pip install -r requirements.txt`
-3. `cp .env.example .env` and set `NIM_API_KEY`
-4. `export $(cat .env | xargs)`
-5. `uvicorn backend.main:app --reload --port 8000`
-6. Open `http://localhost:8000`
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+export $(cat .env | xargs)
+uvicorn backend.main:app --reload --port 8000
+```
 
-## Jac-centric highlights
-- Graph-native model in `backend/jac/graphpilot.jac` with `Goal`, `Task`, `Memory` nodes + semantic edges.
-- Walkers: `GraphPlanner`, `MemoryTraverse`, `Executor` for planning, retrieval, and execution events.
-- Persistent graph memory in `backend/data/graph_memory.json`.
-- Agent orchestration and tool selection in backend service.
+Visit: `http://localhost:8000`
 
-## Demo scenarios
-Use seeded entries in `scenarios/demo_scenarios.json`.
+## Core Product Flow
+1. User enters a goal and scenario.
+2. Graph planner creates Jac-style step sequence.
+3. Tool-enabled executor runs 3 practical actions:
+   - `memory_traverse`
+   - `web_lookup`
+   - `constraint_solver`
+4. Memory walker writes goal/task/context nodes and edges.
+5. Final synthesis agent returns action summary with next actions and risks.
+6. UI renders activity timeline + graph state + final report.
+
+## Demo Scenarios
+See `scenarios/demo_scenarios.json` for seeded stable runs.
+
+## Environment Variables
+- `NIM_API_KEY`: NVIDIA NIM API key for live LLM synthesis.
+- `VERCEL_TOKEN`: optional deployment token.

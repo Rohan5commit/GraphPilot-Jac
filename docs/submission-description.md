@@ -1,18 +1,21 @@
-# Submission Description
+# Devpost Submission Description
 
-GraphPilot Jac is a Jac-first agentic workspace that transforms real-world goals into executable graph plans. It uses Jac graph modeling and walkers for orchestration while integrating tool execution and LLM summarization for practical outcomes.
+GraphPilot Jac is an agentic research-and-action workspace built Jac-first. A user provides a real-world goal; the system decomposes it into tasks, runs tool-backed execution, updates graph memory, and returns a final action summary.
 
-## What we built
-- A web app where users enter goals.
-- A Jac-native graph memory layer storing goals, tasks, and memories.
-- Agent workflow: planner -> executor -> synthesis.
-- Scenario presets for research, personal planning, and fintech decisions.
+## What We Built
+- Clean goal console with scenario selection.
+- Jac-native graph domain (Goal/Task/Memory, semantic edges, walkers).
+- Multi-agent execution flow: planner -> tools -> memory traversal -> synthesis.
+- Persistent graph state with visible node/edge evolution.
+- Three seeded demo scenarios for stable 3-minute presentation.
 
-## Hackathon track fit
-Built for JacHacks Spring with Jac + Jaseci emphasized in runtime model and reasoning workflow.
+## Why This Is Agentic
+- Explicit decomposition into executable subtasks.
+- Tool routing based on step type.
+- Graph memory updates after each run.
+- Final recommendation generated from execution artifacts.
 
-## How it works
-- User submits goal.
-- System decomposes into tasks and records graph entities.
-- Tool actions execute per task class.
-- Final summary + graph/memory state displayed.
+## Jac/Jaseci Usage
+- Walkers for planning/execution semantics.
+- Graph-native data modeling for state.
+- Persistent graph traversal view for memory and coordination.

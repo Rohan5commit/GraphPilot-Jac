@@ -1,10 +1,32 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>GraphPilot Jac</title><link rel='stylesheet' href='/app/styles.css'></head>
-<body><main class='wrap'><h1>GraphPilot Jac</h1><p>Agentic research-and-action workspace powered by Jac graph memory.</p>
-<section class='card'><label>Goal</label><textarea id='goal' placeholder='Enter a real-world goal'></textarea>
-<label>Scenario</label><select id='scenario'><option value='research'>Research Assistant</option><option value='planning'>Personal Planning</option><option value='fintech'>Fintech Workflow</option></select>
-<button id='run'>Run Agents</button><p id='status'></p></section>
-<div class='grid'><section class='card'><h3>Agent Activity</h3><pre id='activity'>No runs yet.</pre></section>
-<section class='card'><h3>Graph Memory View</h3><pre id='graph'>No graph state yet.</pre></section></div>
-<section class='card'><h3>Final Result</h3><pre id='summary'>Run a goal to generate summary.</pre></section></main>
-<script src='/app/main.js'></script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>GraphPilot Jac</title>
+  <link rel='stylesheet' href='/app/styles.css'>
+</head>
+<body>
+  <main class='wrap'>
+    <header><h1>GraphPilot Jac</h1><p>Jac-first agentic research and action workspace.</p></header>
+    <section class='card'>
+      <label>Goal</label>
+      <textarea id='goal' placeholder='Example: Create a two-week launch plan for a student mental health non-profit.'></textarea>
+      <label>Scenario</label>
+      <select id='scenario'>
+        <option value='research'>Research Assistant</option>
+        <option value='planning'>Personal Planning</option>
+        <option value='fintech'>Fintech Workflow</option>
+      </select>
+      <button id='run'>Run GraphPilot Agents</button>
+      <p id='status' class='status'>Idle.</p>
+    </section>
+    <section class='grid'>
+      <article class='card'><h3>Agent Activity</h3><pre id='activity'>No runs yet.</pre></article>
+      <article class='card'><h3>Graph State (nodes + edges)</h3><pre id='graph'>No graph yet.</pre></article>
+    </section>
+    <section class='card'><h3>Final Result</h3><pre id='summary'>Run a goal to generate final summary.</pre></section>
+  </main>
+  <script src='/app/main.js'></script>
+</body>
+</html>

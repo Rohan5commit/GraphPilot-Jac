@@ -1,20 +1,20 @@
-# Architecture
+# GraphPilot Jac Architecture
 
-## Jac Core
-- `backend/jac/graphpilot.jac` defines graph schema and walkers.
-- Node types: `Goal`, `Task`, `Memory`.
-- Edge semantics: `decomposes`, `remembers`, `informs`.
-- Walkers emit orchestration events to mirror planner/executor behavior.
+## Jac-Centric Design
+- Graph schema in `backend/jac/graphpilot.jac` defines `Goal`, `Task`, `Memory` nodes and semantic edges.
+- Runtime mirrors Jac walkers through explicit planner/memory/executor phases in `GraphPilotEngine`.
+- Graph state persists as node+edge memory for cross-run traversal and demo visibility.
 
-## Runtime Flow
-1. Frontend posts a goal to `POST /api/run`.
-2. `GraphPilotEngine` creates goal/task/memory graph state.
-3. Tool routing chooses `memory_traverse`, `web_lookup`, or `llm_synthesis`.
-4. NVIDIA NIM LLM synthesizes final action summary.
-5. Updated graph snapshot returns to UI and persists in JSON memory store.
+## Runtime Pipeline
+1. **Goal Intake** (`POST /api/run`) validates goal/scenario.
+2. **Planner Walker Phase** builds decomposed multi-step plan.
+3. **Executor Walker Phase** runs tool actions per task.
+4. **Memory Traverse Phase** writes memory nodes and relationship edges.
+5. **Synthesis Phase** returns final action memo via NIM or deterministic fallback.
+6. **UI Projection** displays activity stats, event timeline, and graph snapshot.
 
-## System Components
-- **UI** (`app/*`): Landing + console + activity + graph viewer + result panel.
-- **API** (`backend/main.py`): FastAPI endpoints for run + graph state.
-- **Engine** (`backend/services/engine.py`): Agent orchestration, persistence, tool execution.
-- **Jac Module** (`backend/jac/graphpilot.jac`): Native graph/agent semantics.
+## Tooling
+- `memory_traverse`: recalls context and constraints.
+- `web_lookup`: scenario-grounded external context gathering.
+- `constraint_solver`: options under constraints.
+- `llm_synthesis`: final report formatting and recommendations.
