@@ -5,6 +5,11 @@ const summaryEl = document.getElementById('summary');
 const artifactsEl = document.getElementById('artifacts');
 const metricsEl = document.getElementById('metrics');
 
+function setStatus(text, cls = 'status') {
+  statusEl.className = cls;
+  statusEl.textContent = text;
+}
+
 function renderGraph(graphData) {
   const nodes = [];
   const edges = [];
