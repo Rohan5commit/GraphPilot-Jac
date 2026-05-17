@@ -10,11 +10,6 @@ function setStatus(text, cls = 'status') {
   statusEl.textContent = text;
 }
 
-function setStatus(text, cls = 'status') {
-  statusEl.className = cls;
-  statusEl.textContent = text;
-}
-
 function renderGraph(graphData) {
   const container = document.getElementById('graph-viz');
   const nodes = new vis.DataSet();
@@ -28,22 +23,18 @@ function renderGraph(graphData) {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   (async () => {
-    // Add Goals
     for (const g of graphData.goals) {
       nodes.add({ id: g.id, label: `Goal: ${g.title}`, color: '#2f7af8', font: { color: '#fff' }, shape: 'ellipse' });
       await sleep(500);
     }
-    // Add Tasks
     for (const t of graphData.tasks) {
       nodes.add({ id: t.id, label: `Task: ${t.title}`, color: '#35c27a', font: { color: '#fff' }, shape: 'box' });
       await sleep(500);
     }
-    // Add Memories
     for (const m of graphData.memories) {
       nodes.add({ id: m.id, label: `Mem: ${m.value}`, color: '#facc15', font: { color: '#000' }, shape: 'dot', size: 10 });
       await sleep(500);
     }
-    // Add Edges
     for (const e of graphData.edges) {
       edges.add({ from: e.from, to: e.to, label: e.type, arrows: 'to', font: { size: 10, color: '#9fb0cc' }, color: '#2b3a55' });
       await sleep(300);
