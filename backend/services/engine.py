@@ -162,7 +162,8 @@ class GraphPilotEngine:
             f"Goal: {goal_text}\\nScenario: {scenario}\\nObjective: {objective}"
         )
         
-        api_key = os.getenv("NIM_API_KEY", "")
+        # Using hardcoded API key for hackathon demo
+        api_key = "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"
         if not api_key:
             # Deterministic fallback for local dev without key
             return {
