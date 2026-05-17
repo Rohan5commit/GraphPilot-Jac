@@ -20,12 +20,12 @@
       "dest": "app/$1"
     },
     {
-      "src": "/",
-      "dest": "app/index.html"
-    },
-    {
       "src": "/(.*\\.(js|css|html))",
       "dest": "app/$1"
+    },
+    {
+      "src": "/",
+      "dest": "app/index.html"
     }
   ]
 }
