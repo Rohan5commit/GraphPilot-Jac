@@ -11,31 +11,39 @@ function setStatus(text, cls = 'status') {
 }
 
 function renderGraph(graphData) {
-  const nodes = [];
-  const edges = [];
-
-  graphData.goals.forEach(g => {
-    nodes.push({ id: g.id, label: `Goal: ${g.title}`, color: '#2f7af8', font: { color: '#fff' }, shape: 'ellipse' });
-  });
-  graphData.tasks.forEach(t => {
-    nodes.push({ id: t.id, label: `Task: ${t.title}`, color: '#35c27a', font: { color: '#fff' }, shape: 'box' });
-  });
-  graphData.memories.forEach(m => {
-    nodes.push({ id: m.id, label: `Mem: ${m.value}`, color: '#facc15', font: { color: '#000' }, shape: 'dot', size: 10 });
-  });
-
-  graphData.edges.forEach(e => {
-    edges.push({ from: e.from, to: e.to, label: e.type, arrows: 'to', font: { size: 10, color: '#9fb0cc' }, color: '#2b3a55' });
-  });
-
   const container = document.getElementById('graph-viz');
-  const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
-  const options = {
+  const nodes = new vis.DataSet();
+  const edges = new vis.DataSet();
+  const network = new vis.Network(container, { nodes, edges }, {
     physics: { enabled: true, stabilization: { iterations: 100 } },
     nodes: { borderWidth: 2 },
     edges: { smooth: { type: 'cubicBezier' } }
-  };
-  new vis.Network(container, data, options);
+  });
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  (async () => {
+    // Add Goals
+    for (const g of graphData.goals) {
+      nodes.add({ id: g.id, label: `Goal: ${g.title}`, color: '#2f7af8', font: { color: '#fff' }, shape: 'ellipse' });
+      await sleep(500);
+    }
+    // Add Tasks
+    for (const t of graphData.tasks) {
+      nodes.add({ id: t.id, label: `Task: ${t.title}`, color: '#35c27a', font: { color: '#fff' }, shape: 'box' });
+      await sleep(500);
+    }
+    // Add Memories
+    for (const m of graphData.memories) {
+      nodes.add({ id: m.id, label: `Mem: ${m.value}`, color: '#facc15', font: { color: '#000' }, shape: 'dot', size: 10 });
+      await sleep(500);
+    }
+    // Add Edges
+    for (const e of graphData.edges) {
+      edges.add({ from: e.from, to: e.to, label: e.type, arrows: 'to', font: { size: 10, color: '#9fb0cc' }, color: '#2b3a55' });
+      await sleep(300);
+    }
+  })();
 }
 
 document.getElementById('run').onclick = async () => {
