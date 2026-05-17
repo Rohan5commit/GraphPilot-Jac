@@ -1,43 +1,252 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>GraphPilot Jac</title>
-  <link rel='stylesheet' href='/app/styles.css'>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #07101f;
+      color: #c8d8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      min-height: 100dvh;
+      padding: 2rem 1rem;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 2.4rem; font-weight: 800; color: #6699ff; letter-spacing: -0.5px; }
+    header p { color: #7a90b8; margin-top: 0.4rem; font-size: 0.95rem; }
+    .card {
+      background: #0e1e35;
+      border: 1px solid #1e3050;
+      border-radius: 12px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7a90b8;
+      margin-bottom: 0.5rem;
+    }
+    textarea, select {
+      width: 100%;
+      background: #091625;
+      border: 1px solid #1e3050;
+      border-radius: 8px;
+      color: #c8d8f0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.92rem;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+    textarea { min-height: 100px; }
+    select { height: 44px; cursor: pointer; }
+    button#run {
+      width: 100%;
+      padding: 0.9rem;
+      background: #2f7af8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button#run:hover { background: #1a5fcc; }
+    button#run:disabled { background: #1a3a6a; cursor: not-allowed; }
+    #status {
+      margin-top: 0.8rem;
+      font-size: 0.88rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      background: #091625;
+      min-height: 36px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #status.loading { color: #facc15; }
+    #status.done { color: #35c27a; }
+    #status.error { color: #f87171; background: #1a0a0a; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.2rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    h3 { font-size: 1rem; font-weight: 700; color: #6699ff; margin-bottom: 0.9rem;
+         border-left: 3px solid #2f7af8; padding-left: 0.6rem; }
+    pre {
+      background: #091625;
+      border-radius: 8px;
+      padding: 0.9rem;
+      font-size: 0.8rem;
+      overflow: auto;
+      max-height: 320px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #a0b8d8;
+      line-height: 1.6;
+    }
+    #graph-viz { height: 400px; background: #07101f; border-radius: 8px; border: 1px solid #1e3050; }
+    .event-line {
+      border-left: 2px solid #3b82f6;
+      padding-left: 8px;
+      margin-bottom: 8px;
+    }
+    .event-line strong { color: #3b82f6; font-size: 0.8em; text-transform: uppercase; display: block; }
+    .event-line span { font-size: 0.8em; color: #cbd5e1; }
+  </style>
 </head>
 <body>
-  <main class='wrap'>
-    <header>
-      <h1>GraphPilot Jac</h1>
-      <p>Final Submission: Jac-first agentic research and action workspace.</p>
-    </header>
-    <section class='card'>
-      <label>Goal</label>
-      <textarea id='goal' placeholder='Example: Build a 2-week launch plan for a social impact student project.'></textarea>
-      <label>Scenario</label>
-      <select id='scenario'>
-        <option value='research'>Research Assistant</option>
-        <option value='planning'>Personal Planning</option>
-        <option value='fintech'>Fintech Workflow</option>
-      </select>
-      <button id='run'>Run GraphPilot Agents</button>
-      <p id='status' class='status'>Idle.</p>
-    </section>
+<main class="wrap">
+  <header>
+    <h1>GraphPilot Jac</h1>
+    <p>Final Submission: Jac-first agentic research and action workspace.</p>
+  </header>
 
-    <section class='grid'>
-      <article class='card'><h3>Agent Activity</h3><pre id='activity'>No runs yet.</pre></article>
-      <article class='card'><h3>Graph Visualization</h3><div id='graph-viz' style='height: 400px; background: #07101f; border-radius: 8px;'></div></article>
-    </section>
+  <section class="card">
+    <label>Goal</label>
+    <textarea id="goal" placeholder="Example: Build a 2-week launch plan for a financial services company."></textarea>
+    <label>Scenario</label>
+    <select id="scenario">
+      <option value="research">Research Assistant</option>
+      <option value="planning">Personal Planning</option>
+      <option value="fintech">Fintech Workflow</option>
+    </select>
+    <button id="run">Run GraphPilot Agents</button>
+    <div id="status">Idle.</div>
+  </section>
 
-    <section class='grid'>
-      <article class='card'><h3>Tool Artifacts</h3><pre id='artifacts'>Artifacts will appear here.</pre></article>
-      <article class='card'><h3>Graph Metrics</h3><pre id='metrics'>Metrics will appear here.</pre></article>
-    </section>
-    <script src='https://unpkg.com/vis-network/standalone/umd/vis-network.min.js'></script>
-    <script src='/app/main.js'></script>
+  <section class="grid">
+    <article class="card"><h3>Agent Activity</h3><pre id="activity">No runs yet.</pre></article>
+    <article class="card"><h3>Graph Visualization</h3><div id="graph-viz"></div></article>
+  </section>
 
-    <section class='card'><h3>Final Result</h3><pre id='summary'>Run a goal to generate final summary.</pre></section>
-  </main>
+  <section class="grid">
+    <article class="card"><h3>Tool Artifacts</h3><pre id="artifacts">Artifacts will appear here.</pre></article>
+    <article class="card"><h3>Graph Metrics</h3><pre id="metrics">Metrics will appear here.</pre></article>
+  </section>
+
+  <section class="card"><h3>Final Result</h3><pre id="summary">Run a goal to generate a final summary.</pre></section>
+</main>
+
+<script>
+(function () {
+  const statusEl   = document.getElementById('status');
+  const activityEl = document.getElementById('activity');
+  const artifactsEl= document.getElementById('artifacts');
+  const metricsEl  = document.getElementById('metrics');
+  const summaryEl  = document.getElementById('summary');
+  const runBtn     = document.getElementById('run');
+
+  function setStatus(text, cls) {
+    statusEl.className = cls || '';
+    statusEl.textContent = text;
+  }
+
+  function renderGraph(graphData) {
+    const container = document.getElementById('graph-viz');
+    container.innerHTML = '';
+    const nodes = new vis.DataSet();
+    const edges = new vis.DataSet();
+    const opts = {
+      physics: { enabled: true, stabilization: { iterations: 80 } },
+      nodes: { borderWidth: 2, font: { color: '#fff' } },
+      edges: { smooth: { type: 'cubicBezier' }, font: { size: 10, color: '#9fb0cc' }, color: '#2b3a55' }
+    };
+    new vis.Network(container, { nodes, edges }, opts);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    (async () => {
+      for (const g of (graphData.goals || [])) {
+        nodes.add({ id: g.id, label: 'Goal:\n' + g.title.slice(0,30), color: '#2f7af8', shape: 'ellipse' });
+        await sleep(400);
+      }
+      for (const t of (graphData.tasks || [])) {
+        nodes.add({ id: t.id, label: 'Task:\n' + t.title.slice(0,30), color: '#35c27a', shape: 'box' });
+        await sleep(400);
+      }
+      for (const m of (graphData.memories || [])) {
+        nodes.add({ id: m.id, label: 'Mem: ' + m.value.slice(0,20), color: '#facc15', font: { color: '#000' }, shape: 'dot', size: 10 });
+        await sleep(300);
+      }
+      for (const e of (graphData.edges || [])) {
+        try { edges.add({ from: e.from, to: e.to, label: e.type, arrows: 'to' }); } catch(_) {}
+        await sleep(150);
+      }
+    })();
+  }
+
+  runBtn.addEventListener('click', async () => {
+    const goal     = document.getElementById('goal').value.trim();
+    const scenario = document.getElementById('scenario').value;
+
+    if (goal.length < 8) {
+      setStatus('Goal must be at least 8 characters.', 'error');
+      return;
+    }
+
+    runBtn.disabled = true;
+    setStatus('Running planner → tools → memory traversal → synthesis…', 'loading');
+    summaryEl.textContent = 'Generating…';
+    activityEl.textContent = 'Working…';
+
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, scenario })
+      });
+
+      const raw = await res.text();
+
+      if (!res.ok) {
+        setStatus('API error ' + res.status + ': ' + raw.slice(0, 200), 'error');
+        summaryEl.textContent = 'Failed. See status above.';
+        return;
+      }
+
+      let data;
+      try { data = JSON.parse(raw); }
+      catch (e) {
+        setStatus('Bad JSON from server: ' + raw.slice(0, 200), 'error');
+        return;
+      }
+
+      const stats = data.activity && data.activity.stats ? data.activity.stats : {};
+      setStatus('Done: ' + (stats.tasks_completed || 0) + ' tasks completed. Source: ' + (data.plan && data.plan.source || 'unknown'), 'done');
+
+      activityEl.innerHTML = (data.activity && data.activity.events || []).map(e =>
+        `<div class="event-line"><strong>${e.type.replace(/_/g,' ')}</strong><span>${JSON.stringify(e.payload).slice(0,120)}</span></div>`
+      ).join('');
+
+      artifactsEl.textContent = JSON.stringify(data.activity && data.activity.tool_artifacts || [], null, 2);
+      metricsEl.textContent = JSON.stringify({
+        goals:      (data.graph && data.graph.goals  || []).length,
+        tasks:      (data.graph && data.graph.tasks  || []).length,
+        memories:   (data.graph && data.graph.memories || []).length,
+        edges:      (data.graph && data.graph.edges  || []).length,
+        tools_used: stats.tools_used || [],
+        source:     data.plan && data.plan.source || 'unknown'
+      }, null, 2);
+
+      summaryEl.textContent = data.summary || '(no summary)';
+      if (data.graph) renderGraph(data.graph);
+
+    } catch (err) {
+      setStatus('Network error: ' + err.message, 'error');
+      summaryEl.textContent = 'Check console for details.';
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+})();
+</script>
 </body>
 </html>
