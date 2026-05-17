@@ -10,6 +10,11 @@ function setStatus(text, cls = 'status') {
   statusEl.textContent = text;
 }
 
+function setStatus(text, cls = 'status') {
+  statusEl.className = cls;
+  statusEl.textContent = text;
+}
+
 function renderGraph(graphData) {
   const container = document.getElementById('graph-viz');
   const nodes = new vis.DataSet();
