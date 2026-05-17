@@ -212,43 +212,46 @@ class GraphPilotEngine:
             }
 
     def _execute_tool(self, tool: str, goal: str, scenario: str, order: int) -> dict[str, Any]:
-        if tool == "memory_traverse":
-            return {
-                "tool": tool,
-                "order": order,
-                "summary": "Recovered prior constraints and intent from graph memory.",
-                "data": {"constraints": ["time", "quality", "risk"], "signal": "historical run alignment"},
-            }
         if tool == "web_lookup":
-            domain_hint = {
-                "research": ["Recent benchmark posts", "Open-source docs", "Community adoption threads"],
-                "planning": ["Calendar blocking techniques", "Focus interval studies", "Habit adherence metrics"],
-                "fintech": ["Cashflow templates", "Emergency fund ratios", "Volatility coping playbooks"],
-            }.get(scenario, ["Domain brief", "Public references", "Current trends"])
-            return {
-                "tool": tool,
-                "order": order,
-                "summary": "Collected external evidence from scenario-specific sources.",
-                "data": {"evidence": domain_hint},
-            }
-        if tool == "constraint_solver":
-            return {
-                "tool": tool,
-                "order": order,
-                "summary": "Produced ranked options with explicit tradeoffs.",
-                "data": {
-                    "options": [
-                        {"label": "Low-risk path", "score": 0.86, "tradeoff": "slower speed"},
-                        {"label": "Balanced path", "score": 0.91, "tradeoff": "moderate effort"},
-                        {"label": "Aggressive path", "score": 0.78, "tradeoff": "higher risk"},
-                    ]
-                },
-            }
+            try:
+                # Real search integration
+                query = goal.replace(" ", "+")
+                resp = requests.get(f"https://api.duckduckgo.com/?q={query}&format=json", timeout=10)
+                resp.raise_for_status()
+                data = resp.json()
+                results = data.get("AbstractText", "No specific abstract found.")
+                return {
+                    "tool": tool,
+                    "order": order,
+                    "summary": "Retrieved live web context.",
+                    "data": {"result": results[:500]}
+                }
+            except Exception as e:
+                return {"tool": tool, "order": order, "summary": "Search failed.", "data": {"error": str(e)}}
+        
+        if tool == "memory_traverse":
+            # Persistent memory traversal from local file
+            mem_file = Path("/tmp/graph_memory.json")
+            if mem_file.exists():
+                try:
+                    with open(mem_file, "r") as f:
+                        mem = json.load(f)
+                    return {
+                        "tool": tool,
+                        "order": order,
+                        "summary": "Recovered historical context from graph memory.",
+                        "data": {"history": mem.get("memories", [])[-5:]}
+                    }
+                except:
+                    pass
+            return {"tool": tool, "order": order, "summary": "No historical memory found.", "data": {"history": []}}
+
+        # Other tools as logical stubs for the hackathon demo
         return {
             "tool": tool,
             "order": order,
-            "summary": "Prepared final synthesis packet from all tool artifacts.",
-            "data": {"format": "outcome + next-3-actions + risks"},
+            "summary": "Executed logical constraint processing.",
+            "data": {"status": "success", "processed_by": scenario}
         }
 
     def _memory_traverse(
