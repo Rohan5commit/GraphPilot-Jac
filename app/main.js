@@ -75,7 +75,12 @@ document.getElementById('run').onclick = async () => {
     };
 
     setStatus(`Done: ${data.activity.stats.tasks_completed} tasks completed.`, 'status done');
-    activityEl.textContent = JSON.stringify(data.activity.events, null, 2);
+    activityEl.innerHTML = data.activity.events.map(e => `
+      <div style="margin-bottom: 8px; border-left: 2px solid #3b82f6; padding-left: 8px;">
+        <strong style="color: #3b82f6; font-size: 0.9em; text-transform: uppercase;">${e.type.replace('_', ' ')}</strong><br/>
+        <span style="font-size: 0.85em; color: #cbd5e1;">${JSON.stringify(e.payload)}</span>
+      </div>
+    `).join('');
     artifactsEl.textContent = JSON.stringify(data.activity.tool_artifacts, null, 2);
     metricsEl.textContent = JSON.stringify(metrics, null, 2);
     summaryEl.textContent = data.summary;
