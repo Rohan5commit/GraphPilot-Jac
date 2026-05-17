@@ -7,14 +7,14 @@ def test_run_goal_and_graph_snapshot(tmp_path: Path):
     engine = GraphPilotEngine(data_file=tmp_path / "graph.json")
     result = engine.run_goal("Plan a 14-day interview prep sprint", "planning")
 
-    assert result["activity"]["stats"]["tasks_completed"] == 4
-    assert len(result["tasks"]) == 4
+    assert result["activity"]["stats"]["tasks_completed"] == 5
+    assert len(result["tasks"]) == 5
     assert len(result["edges"]) > 0
     assert "Next 3 actions" in result["summary"]
 
     snapshot = engine.graph_snapshot(result["goal"]["id"])
     assert len(snapshot["goals"]) == 1
-    assert len(snapshot["tasks"]) == 4
+    assert len(snapshot["tasks"]) == 5
     assert len(snapshot["memories"]) >= 4
 
 
