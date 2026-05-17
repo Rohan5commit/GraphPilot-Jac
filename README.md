@@ -34,13 +34,30 @@ GraphPilot-Jac/
 
 ## Setup
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-export $(cat .env | xargs)
-uvicorn backend.main:app --reload --port 8000
-```
+1. Create a virtual environment:
+   ```bash
+   python3 -m venv .venv
+   ```
+2. Activate the environment:
+   ```bash
+   # macOS/Linux:
+   source .venv/bin/activate
+   # Windows:
+   .venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Configure environment:
+   ```bash
+   cp .env.example .env
+   ```
+5. Run the server:
+   ```bash
+   uvicorn backend.main:app --reload --port 8000
+   ```
+
 
 Visit: http://localhost:8000
 
